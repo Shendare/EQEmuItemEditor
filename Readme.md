@@ -15,15 +15,15 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 
 #Screenshots:
 
->https://raw.githubusercontent.com/Shendare/EQZip/master/screenshots/screenshot1.png
+>https://raw.githubusercontent.com/Shendare/EQEmuItemEditor/master/screenshots/screenshot1.png
 
->https://raw.githubusercontent.com/Shendare/EQZip/master/screenshots/screenshot2.png
+>https://raw.githubusercontent.com/Shendare/EQEmuItemEditor/master/screenshots/screenshot2.png
 
->https://raw.githubusercontent.com/Shendare/EQZip/master/screenshots/screenshot3.png
+>https://raw.githubusercontent.com/Shendare/EQEmuItemEditor/master/screenshots/screenshot3.png
 
->https://raw.githubusercontent.com/Shendare/EQZip/master/screenshots/screenshot4.png
+>https://raw.githubusercontent.com/Shendare/EQEmuItemEditor/master/screenshots/screenshot4.png
 
->https://raw.githubusercontent.com/Shendare/EQZip/master/screenshots/screenshot5.png
+>https://raw.githubusercontent.com/Shendare/EQEmuItemEditor/master/screenshots/screenshot5.png
 
 #Disclaimer:
 
