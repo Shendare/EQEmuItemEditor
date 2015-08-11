@@ -1291,6 +1291,7 @@ namespace EQEmuItemEditor
         public int HighestNourishment;
         public int HighestFactionID;
 
+        public int OldItemID = 0;
         public bool ItemLoading = false;
         public DataRow Item;
         public ItemGroups ItemGroup;
@@ -2707,6 +2708,7 @@ namespace EQEmuItemEditor
                 _i++;
             }
 
+            OldItemID = IntField("id");
             ItemLoading = false;
 
             editToolStripMenuItem_Click(null, null);
@@ -3143,7 +3145,7 @@ namespace EQEmuItemEditor
             }
 
             ItemLine.Append(" WHERE `id`=");
-            ItemLine.Append(Item["id"].ToString());
+            ItemLine.Append(OldItemID.ToString());
             ItemLine.Append(';');
 
             switch (Execute(ItemLine.ToString()))
@@ -3155,6 +3157,7 @@ namespace EQEmuItemEditor
                     MessageBox.Show(this, "Weird: There was a glitch saving this as item # " + Item["id"].ToString() + " to the Items table.\r\n\r\nThe database said it couldn't find that item, so it did nothing.", "Glitch Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
                 default:
+                    OldItemID = IntField("id");
                     ChangedColumn.Clear();
                     buttonItemSave.Enabled = false;
                     buttonSearchName_Click(buttonSearchName, null);
@@ -3170,24 +3173,25 @@ namespace EQEmuItemEditor
                 return;
             }
 
-            if (MessageBox.Show(this, "WARNING: You are about to DELETE\r\n\r\n" + TextField("name") + " (" + TextField("id") + ").\r\n\r\nAre you SURE you wish to do this?", "Delete Item Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+            if (MessageBox.Show(this, "WARNING: You are about to DELETE\r\n\r\n" + TextField("name") + " (" + OldItemID.ToString() + ").\r\n\r\nAre you SURE you wish to do this?", "Delete Item Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
             {
                 return;
             }
 
-            switch (Execute("DELETE FROM `items` WHERE `id`=" + TextField("id")))
+            switch (Execute("DELETE FROM `items` WHERE `id`=" + OldItemID.ToString()))
             {
                 case -1:
-                    MessageBox.Show(this, "Error: There was a problem deleting item # " + Item["id"].ToString() + " from the Items table.", "Error Deleting Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show(this, "Error: There was a problem deleting item # " + OldItemID.ToString() + " from the Items table.", "Error Deleting Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     break;
                 case 0:
-                    MessageBox.Show(this, "Weird: There was a glitch deleting item # " + Item["id"].ToString() + " from the Items table.\r\n\r\nThe database said it couldn't find that item, so it did nothing.", "Glitch Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, "Weird: There was a glitch deleting item # " + OldItemID.ToString() + " from the Items table.\r\n\r\nThe database said it couldn't find that item, so it did nothing.", "Glitch Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
                 default:
                     ChangedColumn.Clear();
                     buttonItemSave.Enabled = false;
                     searchToolStripMenuItem_Click(searchToolStripMenuItem, null);
                     buttonSearchName_Click(buttonSearchName, null);
+                    OldItemID = -1;
                     Item = null;
                     PreviewItem = null;
                     editToolStripMenuItem.ForeColor = SystemColors.ScrollBar;

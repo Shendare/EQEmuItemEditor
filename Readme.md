@@ -1,9 +1,9 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.0
+Current Version: 1.0.1
 
-Last Updated: 8/9/2015
+Last Updated: 8/10/2015
 
 Github Link: https://github.com/Shendare/EQEmuItemEditor
 
@@ -42,6 +42,11 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 >https://creativecommons.org/publicdomain/zero/1.0/
 
 #Release Notes:
+
+8/10/2015 - Version 1.0.1
+
+* Fixed glitch with saving or deleting new items, or changing an item's id
+
 
 8/9/2015 - Version 1.0
 
