@@ -2930,6 +2930,7 @@ namespace EQEmuItemEditor
                 }
 
                 Item = PreviewItem;
+                OldItemID = ItemID;
                 ChangedColumn.Clear();
                 UpdatePreviewBox(-1);
             }
