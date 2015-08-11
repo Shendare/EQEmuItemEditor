@@ -1,9 +1,9 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.0.1
+Current Version: 1.1
 
-Last Updated: 8/10/2015
+Last Updated: 8/11/2015
 
 Github Link: https://github.com/Shendare/EQEmuItemEditor
 
@@ -43,9 +43,42 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 
 #Release Notes:
 
+8/11/2015 - Version 1.1
+
+* Fixed: Error setting '[NumericField]' to ''.
+
+* Fixed: "Lore Group: #1 (Oops!)" showing on new items
+
+* Fixed: Unrecognized tab could be populated with the same bunch of controls multiple times
+
+* Fixed: Smartened SQL encoding of various field types
+
+* Fixed: Added jpeg and removed targa from the Icon loader to match actual .Net support
+
+* Fixed: Vastly improved handling of app's edit-state and what item is being previewed/edited
+
+* Fixed: Handling of broken database connection at first startup
+
+* Fixed: Mismatched Preview of "Must Equip" and "Any Slot/Can Equip" click effect types
+
+* Added: Implemented cloning and deleting (with confirmation) multiple items at once
+
+* Added: Version number to window title
+
+* Improved: Better default values for some fields when creating New item from scratch
+
+* Improved: Unchangeable non-click spell effects on items now display as obviously unchangeable
+
+* Improved: Cloned items will now be named with a number after to denote that it's a duplicate
+
+* Improved: Clarified discard changes prompt for items where the ID has been changed
+
+
+
 8/10/2015 - Version 1.0.1
 
 * Fixed glitch with saving or deleting new items, or changing an item's id
+
 
 
 8/9/2015 - Version 1.0

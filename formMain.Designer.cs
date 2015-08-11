@@ -430,7 +430,7 @@
             this.listSearchItems.TabIndex = 2;
             this.listSearchItems.UseCompatibleStateImageBehavior = false;
             this.listSearchItems.View = System.Windows.Forms.View.List;
-            this.listSearchItems.SelectedIndexChanged += new System.EventHandler(this.listSearchItems_SelectedIndexChanged);
+            this.listSearchItems.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.listSearchItems_ItemSelectionChanged);
             this.listSearchItems.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listSearchItems_MouseDoubleClick);
             // 
             // itemIcons
@@ -1378,7 +1378,7 @@
             this.buttonItemClone.TabStop = false;
             this.buttonItemClone.Text = "Clone";
             this.buttonItemClone.UseVisualStyleBackColor = true;
-            this.buttonItemClone.Click += new System.EventHandler(this.Item_Clone);
+            this.buttonItemClone.Click += new System.EventHandler(this.buttonItemClone_Click);
             // 
             // buttonItemNew
             // 
@@ -5657,6 +5657,7 @@
             // listEditBardEffectTypeShow
             // 
             this.listEditBardEffectTypeShow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.listEditBardEffectTypeShow.Enabled = false;
             this.listEditBardEffectTypeShow.FormattingEnabled = true;
             this.listEditBardEffectTypeShow.Items.AddRange(new object[] {
             "Bard Song Focus Effect"});
@@ -5911,6 +5912,7 @@
             // listEditWornTypeShow
             // 
             this.listEditWornTypeShow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.listEditWornTypeShow.Enabled = false;
             this.listEditWornTypeShow.FormattingEnabled = true;
             this.listEditWornTypeShow.Items.AddRange(new object[] {
             "Worn Magical Effect"});
@@ -6165,6 +6167,7 @@
             // listEditFocusTypeShow
             // 
             this.listEditFocusTypeShow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.listEditFocusTypeShow.Enabled = false;
             this.listEditFocusTypeShow.FormattingEnabled = true;
             this.listEditFocusTypeShow.Items.AddRange(new object[] {
             "Worn Spell Focus Effect"});
@@ -6419,6 +6422,7 @@
             // listEditProcTypeShow
             // 
             this.listEditProcTypeShow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.listEditProcTypeShow.Enabled = false;
             this.listEditProcTypeShow.FormattingEnabled = true;
             this.listEditProcTypeShow.Items.AddRange(new object[] {
             "Random Combat Activation"});
@@ -6926,6 +6930,7 @@
             // listEditScrollTypeShow
             // 
             this.listEditScrollTypeShow.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.listEditScrollTypeShow.Enabled = false;
             this.listEditScrollTypeShow.FormattingEnabled = true;
             this.listEditScrollTypeShow.Items.AddRange(new object[] {
             "Scribed Spell Scroll"});
@@ -7310,17 +7315,17 @@
             this.buttonItemDelete.TabStop = false;
             this.buttonItemDelete.Text = "Delete";
             this.buttonItemDelete.UseVisualStyleBackColor = true;
-            this.buttonItemDelete.Click += new System.EventHandler(this.Item_Delete);
+            this.buttonItemDelete.Click += new System.EventHandler(this.buttonItemDelete_Click);
             // 
             // formMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(896, 602);
-            this.Controls.Add(this.buttonItemDelete);
             this.Controls.Add(this.panelEdit);
-            this.Controls.Add(this.panelOptions);
             this.Controls.Add(this.panelSearch);
+            this.Controls.Add(this.buttonItemDelete);
+            this.Controls.Add(this.panelOptions);
             this.Controls.Add(this.buttonItemSave);
             this.Controls.Add(this.buttonItemNew);
             this.Controls.Add(this.buttonItemClone);

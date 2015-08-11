@@ -1306,6 +1306,7 @@ namespace EQEmuItemEditor
         public bool IconPickerWindowCoordsValid = false;
 
         public bool DBLoaded = false;
+        public bool EditableState = false;
 
         public Dictionary<string, bool> ChangedColumn = new Dictionary<string, bool>();
         public Dictionary<string, bool> UsedColumn = new Dictionary<string, bool>();
@@ -1330,11 +1331,14 @@ namespace EQEmuItemEditor
         {
             InitializeComponent();
 
+            this.Text += " v" + float.Parse(Application.ProductVersion.Substring(0, 2).Replace(".", "") + "." + Application.ProductVersion.Substring(2).Replace(".", "")).ToString("#0.0###");
+
             ItemLoading = true;
 
             Dictionary<int, string> _clickTypes = new Dictionary<int, string>();
             _clickTypes.Add(0, "Standard Item Effect Activation");
             _clickTypes.Add(1, "Any Slot, No Race/Class Check");
+            _clickTypes.Add(2, "Not Used (2)");
             _clickTypes.Add(3, "Any Slot, No Check, Expendable");
             _clickTypes.Add(4, "Must Equip in order to Activate");
             _clickTypes.Add(5, "Any Slot, Must be Able to Equip");
@@ -1381,6 +1385,129 @@ namespace EQEmuItemEditor
             }
         }
 
+        private void buttonItemClone_Click(object sender, EventArgs e)
+        {
+            if (Item == null)
+            {
+                CheckEditableState();
+
+                return;
+            }
+
+            DataRow _curItem = Item;
+            DataRow _curPreview = PreviewItem;
+
+            if (panelEdit.Visible)
+            {
+                // Cloning the one item we're viewing.
+
+                if (!Item_ConfirmChange())
+                {
+                    return;
+                }
+
+                PreviewItem = Item;
+
+                if (Item_Clone() == DialogResult.OK)
+                {
+                    ChangedColumn.Clear();
+                    PreviewItem = Item;
+                    Item = null;
+                    Item_EditMode();
+                    UpdatePreviewBox(-1);
+                    buttonSearchName_Click(buttonSearchName, null);
+                }
+                else
+                {
+                    Item = _curItem;
+                    PreviewItem = _curPreview;
+                }
+            }
+            else
+            {
+                // Cloning one or more items from the search results
+
+                foreach (ListViewItem _item in listSearchItems.SelectedItems)
+                {
+                    Item = Item_Load((int)_item.Tag);
+                    PreviewItem = Item;
+                    Item_Clone();
+                }
+
+                Item = _curItem;
+                PreviewItem = _curPreview;
+
+                buttonSearchName_Click(buttonSearchName, null);
+            }
+        }
+
+        private void buttonItemDelete_Click(object sender, EventArgs e)
+        {
+            if (panelEdit.Visible || (listSearchItems.SelectedItems.Count == 1))
+            {
+                if (MessageBox.Show(this, "WARNING: You are about to DELETE\r\n\r\n" + TextField("name") + " (" + OldItemID.ToString() + ").\r\n\r\nAre you SURE you wish to do this?", "Delete Item Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (MessageBox.Show(this, "WARNING: You are about to DELETE " + listSearchItems.SelectedItems.Count.ToString() + " items.\r\n\r\nAre you SURE you wish to do this?", "Delete Item Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            if (panelEdit.Visible)
+            {
+                // Deleting the item we're editing
+
+                Item_Delete();
+                ChangedColumn.Clear();
+                searchToolStripMenuItem_Click(searchToolStripMenuItem, null);
+
+                Item = null;
+                PreviewItem = null;
+                Item_Preview(-1);
+            }
+            else
+            {
+                int _curItemID = OldItemID;
+
+                // Deleting one or more items from the search results
+                foreach (ListViewItem _item in listSearchItems.SelectedItems)
+                {
+                    OldItemID = (int)_item.Tag;
+                    Item_Delete();
+
+                    if (OldItemID == _curItemID)
+                    {
+                        // We deleted the one we're editing, too.
+
+                        ChangedColumn.Clear();
+                        Item = null;
+                        PreviewItem = null;
+                        _curItemID = -1;
+                        buttonSearchName_Click(buttonSearchName, null);
+
+                        if (listSearchItems.SelectedItems.Count > 0)
+                        {
+                            Item_Preview((int)listSearchItems.SelectedItems[listSearchItems.SelectedItems.Count - 1].Tag);
+                        }
+                        else
+                        {
+                            Item_Preview(-1);
+                        }
+                    }
+                }
+
+                OldItemID = _curItemID;
+            }
+
+            buttonSearchName_Click(buttonSearchName, null);
+            CheckEditableState();
+        }
+
         private void buttonSearchName_Click(object sender, EventArgs e)
         {
             if (textSearchName.Text.Trim().Length > 0)
@@ -1415,20 +1542,32 @@ namespace EQEmuItemEditor
                 return;
             }
 
-            ItemLoading = true;
+            if (!EditableState)
+            {
+                return;
+            }
 
-            if (Item == null)
+            if ((Item == null) || (textEditID.Text.Equals("")))
             {
                 if (PreviewItem == null)
                 {
+                    EditableState = false;
+
                     return;
                 }
                 
+                // Editing our first item of the session.                
                 Item_EditMode();
             }
-            else if (Item["id"].ToString() != textEditID.Text)
+            else
             {
-                Item_EditMode();
+                if ((PreviewItem != null) &&
+                    (!textEditID.Text.Equals(Item["id"].ToString()) ||
+                     !OldItemID.Equals(PreviewItem["id"])))
+                {
+                    // We've changed items.
+                    Item_EditMode();
+                }
             }
 
             if (Item != null)
@@ -1444,12 +1583,12 @@ namespace EQEmuItemEditor
                     UpdatePreviewBox(-1);
                 }
             }
-
-            ItemLoading = false;
         }
 
         private void formMain_Load(object sender, EventArgs e)
         {
+            CheckEditableState();
+            
             if (!DBLoaded)
             {
                 ResetOptionFields();
@@ -1468,10 +1607,12 @@ namespace EQEmuItemEditor
                     timerLoading.Enabled = true;
                 }
             }
-
-            if ((itemIcons.Tag == null) && (itemIcons.Images.Count == 0))
+            else
             {
-                timerLoading.Enabled = true;
+                if ((itemIcons.Tag == null) && (itemIcons.Images.Count == 0))
+                {
+                    timerLoading.Enabled = true;
+                }
             }
         }
 
@@ -1486,7 +1627,7 @@ namespace EQEmuItemEditor
 
             CheckBox _box = (CheckBox)sender;
             string _field = _box.Name.Substring(8).ToLower();
-            int _boxnum = ((_box.Tag == null) || (_box.Tag == "")) ? 98 : int.Parse(_box.Tag.ToString());
+            int _boxnum = ((_box.Tag == null) || (_box.Tag.Equals(""))) ? 98 : int.Parse(_box.Tag.ToString());
             int _value = (_box.Checked ? 1 : 0);
 
             switch (_field)
@@ -1512,7 +1653,7 @@ namespace EQEmuItemEditor
 
             CheckedListBox _box = (CheckedListBox)sender;
             string _field = _box.Name.Substring(8).ToLower();
-            int _boxnum = ((_box.Tag == null) || (_box.Tag == "")) ? 98 : int.Parse(_box.Tag.ToString());
+            int _boxnum = ((_box.Tag == null) || (_box.Tag.Equals(""))) ? 98 : int.Parse(_box.Tag.ToString());
 
             int _index = _box.SelectedIndex;
             string _name = (_index < 0) ? "" : _box.SelectedItems[0].ToString();
@@ -1546,7 +1687,7 @@ namespace EQEmuItemEditor
                             SetField(_flag, _ifchecked);
                             break;
                         case 'c': // charmfileid
-                            _boxnum = 99; // No preview change
+                            _boxnum = 98; // No preview change
                             SetField(_flag, _ifchecked);
                             break;
                         default:
@@ -1726,7 +1867,7 @@ namespace EQEmuItemEditor
             
             ComboBox _box = (ComboBox)sender;
             string _field = _box.Name.Substring(8).ToLower();
-            int _boxnum = ((_box.Tag == null) || (_box.Tag == "")) ? 98 : int.Parse(_box.Tag.ToString());
+            int _boxnum = ((_box.Tag == null) || (_box.Tag.Equals(""))) ? 98 : int.Parse(_box.Tag.ToString());
             string _value = _box.Text;
             int _index = _box.SelectedIndex;
             int _number = 0;
@@ -1778,7 +1919,7 @@ namespace EQEmuItemEditor
 
             RadioButton _box = (RadioButton)sender;
             string _field = _box.Name.Substring(8).ToLower();
-            int _boxnum = ((_box.Tag == null) || (_box.Tag == "")) ? 98 : int.Parse(_box.Tag.ToString());
+            int _boxnum = ((_box.Tag == null) || (_box.Tag.Equals(""))) ? 98 : int.Parse(_box.Tag.ToString());
             int _value = int.Parse(_field.Substring(_field.Length - 1));
             _field = _field.Substring(0, _field.Length - 1);
 
@@ -1949,19 +2090,25 @@ namespace EQEmuItemEditor
                             }
                             catch
                             {
-                                if (_value == "")
+                                // User has started typing a negative or floating point number, but hasn't gotten to digits yet
+                                if ((_value != "-") && !_value.StartsWith("."))
                                 {
-                                    SetField(_field, 0); // Empty box for a number value. That means zero.
-                                }
-                                else if (_value != "-") // User has started typing a negative number, but hasn't gotten to digits yet
-                                {
-                                    // I don't know why it threw up.
+                                    // Nope. I don't know why it threw up.
 
-                                    System.Diagnostics.Debugger.Break();
+                                    if (!IgnoreFieldErrors)
+                                    {
+                                        MessageBox.Show(this, "Error setting field `" + _field + "` to value '" + _value + "'", "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                                    }
                                 }
                             }
                             break;
                     }
+
+                    if (Item[_field].Equals(0) && _value.Equals(""))
+                    {
+                        _box.Text = Item[_field].ToString();
+                    }
+
                     break;
             }
 
@@ -2040,22 +2187,21 @@ namespace EQEmuItemEditor
             }
         }
 
-        private void listSearchItems_SelectedIndexChanged(object sender, EventArgs e)
+        private void listSearchItems_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            buttonItemClone.Enabled = (Item != null); // listSearchItems.SelectedItems.Count > 0;
+            CheckEditableState();
 
-            if ((PreviewItem != null) || (listSearchItems.SelectedItems.Count == 1))
+            if (e.IsSelected)
             {
-                editToolStripMenuItem.ForeColor = SystemColors.ControlText;
+                Item_Preview((int)e.Item.Tag);
+            }
+            else if (listSearchItems.SelectedItems.Count > 0)
+            {
+                Item_Preview((int)listSearchItems.SelectedItems[listSearchItems.SelectedItems.Count - 1].Tag);
             }
             else
             {
-                editToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
-            }
-
-            if (listSearchItems.SelectedItems.Count == 1)
-            {
-                Item_Preview((int)listSearchItems.SelectedItems[0].Tag);
+                Item_Preview(-1);
             }
         }
 
@@ -2171,15 +2317,16 @@ namespace EQEmuItemEditor
 
             if (!DBLoaded)
             {
-                editToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
-
+                Item = null;
+                PreviewItem = null;
+                OldItemID = -1;
+                
+                CheckEditableState();
+                
                 panelSearch.Visible = true;
                 panelEdit.Visible = false;
                 panelOptions.Visible = false;
 
-                buttonItemClone.Enabled = false;
-                buttonItemSave.Enabled = false;
-                buttonItemDelete.Enabled = false;
                 buttonSearchName.Enabled = textSearchName.Text.Length > 0;
                 textSearchName.Text = Settings.SearchName;
 
@@ -2285,6 +2432,42 @@ namespace EQEmuItemEditor
             }
         }
 
+        private void CheckEditableState()
+        {
+            if (listSearchItems.SelectedItems.Count == 1)
+            {
+                EditableState = true;
+            }
+            else if ((listSearchItems.SelectedItems.Count == 0) &&
+                     (Item != null))
+            {
+                EditableState = true;
+            }
+            else
+            {
+                EditableState = false;
+            }
+
+            if (EditableState)
+            {
+                editToolStripMenuItem.ForeColor = SystemColors.ControlText;
+            }
+            else
+            {
+                editToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
+            }
+
+            buttonItemNew.Enabled = DBLoaded;
+            
+            buttonItemClone.Enabled = (Item != null) ||
+                                      (listSearchItems.SelectedItems.Count > 0);
+
+            buttonItemSave.Enabled = (Item != null) &&
+                                     (ChangedColumn.Count > 0);
+
+            buttonItemDelete.Enabled = buttonItemClone.Enabled;
+        }
+        
         private int Execute(string Query)
         {
             string _connStr = Settings.Database.Conn.
@@ -2473,6 +2656,11 @@ namespace EQEmuItemEditor
 
         public void SetField(string FieldName, object Value)
         {
+            if (Item.Table.Columns[FieldName].DataType.IsPrimitive && Value.Equals(""))
+            {
+                Value = 0; // Empty string in a numeric field -> zero
+            }
+            
             try
             {
                 Item[FieldName] = Value;
@@ -2483,22 +2671,65 @@ namespace EQEmuItemEditor
             catch
             { }
 
-            try
-            {
-                Item[FieldName] = Value.ToString();
-                ChangedColumn[FieldName.ToLower()] = true;
+            Item[FieldName] = Value.ToString();
+            ChangedColumn[FieldName.ToLower()] = true;
 
-                return;
-            }
-            catch
+            return;
+        }
+
+        public object SQLDefault(DataColumn Column)
+        {
+            switch (Column.DataType.ToString())
             {
-                if (!IgnoreFieldErrors)
+                case "System.Byte":
+                case "System.Int8":
+                case "System.Int16":
+                case "System.Int32":
+                case "System.Int64":
+                    return 0;
+                case "System.Single":
+                case "System.Double":
+                    return 0.0f;
+                case "System.DateTime":
+                    return DateTime.UtcNow;
+                case "System.String":
+                    return "";
+                default:
+                    System.Diagnostics.Debugger.Break();
+                    return null;
+            }
+        }
+        
+        public string SQLEncode(DataColumn Column, object Value)
+        {
+            if (Value == DBNull.Value)
+            {
+                return "null";
+            }
+            else
+            {
+                switch (Column.DataType.ToString())
                 {
-                    MessageBox.Show(this, "Error setting field `" + FieldName + "` to value '" + Value + "'", "Data Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    case "System.Byte":
+                    case "System.Int8":
+                    case "System.Int16":
+                    case "System.Int32":
+                    case "System.Int64":
+                        return Value.ToString();
+                    case "System.Single":
+                        return ((Single)Value).ToString("#.0###");
+                    case "System.Double":
+                        return ((Double)Value).ToString("#.0#######");
+                    case "System.DateTime":
+                        return "'" + ((DateTime)Value).ToString("yyyy-MM-dd HH:mm:ss.ffff") + "'";
+                    case "System.String":
+                        return "'" + Value.ToString().Replace("'", "''") + "'";
+                    default:
+                        return "'" + Value.ToString().Replace("'", "''") + "'";
                 }
             }
         }
-
+        
         private void AddValue(int Box, string Value) { AddField(Box, "", "", Value, false); }
         private void AddValue(int Box, string Value, bool LineAbove) { AddField(Box, "", "", Value, LineAbove); }
 
@@ -2550,7 +2781,7 @@ namespace EQEmuItemEditor
         {
             if (ChangedColumn.Count > 0)
             {
-                if (MessageBox.Show(this, "You have made unsaved changes to " + Item["name"] + " (" + Item["id"] + ").\n\nAre you sure you wish to discard them?", "Discard Unsaved Changes?", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                if (MessageBox.Show(this, "You have made unsaved changes to " + Item["name"] + " (" + OldItemID.ToString() + ((OldItemID != IntField("id") ? (", now " + TextField("id")) : "")) + ").\n\nAre you sure you wish to discard them?", "Discard Unsaved Changes?", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
                 {
                     return false;
                 }
@@ -2561,10 +2792,38 @@ namespace EQEmuItemEditor
 
         private void Item_EditMode()
         {
-            int _i = (listSearchItems.SelectedItems.Count < 1) ? IntField("id") : (int)listSearchItems.SelectedItems[0].Tag;
-            Item_Preview(_i);
-            Item = PreviewItem;
-            ChangedColumn.Clear();
+            if (listSearchItems.SelectedItems.Count < 1)
+            {
+                if (Item == null)
+                {
+                    if (PreviewItem == null)
+                    {
+                        EditableState = false;
+                        CheckEditableState();
+
+                        return;
+                    }
+                }
+                else if (PreviewItem == null)
+                {
+                    PreviewItem = Item;
+                }
+
+                OldItemID = IntField("id");
+            }
+            else if (listSearchItems.SelectedItems.Count > 1)
+            {
+                EditableState = false;
+                CheckEditableState();
+
+                return;
+            }
+            else
+            {
+                OldItemID = (int)listSearchItems.SelectedItems[0].Tag;
+            }
+
+            Item_Preview(OldItemID);
 
             int _columns = Item.Table.Columns.Count;
             ItemLoading = true;
@@ -2575,8 +2834,7 @@ namespace EQEmuItemEditor
             List<Control> _controls = new List<Control>();
 
             // Marking these fields as used so they don't end up in Unrecognized:
-
-            // Handled in a custom way.
+            // They are handled in a custom way.
             TextField("icon");
             TextField("itemclass");
             TextField("scrolltype");
@@ -2587,7 +2845,8 @@ namespace EQEmuItemEditor
             TextField("casttime_");
             TextField("ldonsold");
             TextField("pointtype");
-            TextField("loregroupmembercount");
+
+            TextField("loregroupmembercount"); // A read-only aggregate result
 
             foreach (TabPage _page in tabControlEdit.TabPages)
             {
@@ -2656,8 +2915,6 @@ namespace EQEmuItemEditor
                                 if (Item_FillField(_checkControl, _field, _value) != DialogResult.OK)
                                 {
                                     MessageBox.Show(this, "Unable to fill in " + _checkControl.Name + " with field " + _field + " value '" + _value + "'!", "Field Fill Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-                                    System.Diagnostics.Debugger.Break();
                                 }
                             }
                         }
@@ -2683,6 +2940,9 @@ namespace EQEmuItemEditor
 
             _unusedColumns.Sort();
 
+            // Forgot this part in 1.0. My bad...
+            tabEditUnrecognized.Controls.Clear();
+            
             _i = 0;
             foreach (string _unusedColumn in _unusedColumns)
             {
@@ -2711,7 +2971,7 @@ namespace EQEmuItemEditor
             OldItemID = IntField("id");
             ItemLoading = false;
 
-            editToolStripMenuItem_Click(null, null);
+            editToolStripMenuItem_Click(editToolStripMenuItem, null);
         }
         
         private DialogResult Item_FillField(Control Field, string Column, string Value)
@@ -2913,6 +3173,11 @@ namespace EQEmuItemEditor
             return DialogResult.OK;
         }
         
+        private DataRow Item_Load(int ItemID)
+        {
+            return GetData("SELECT *,0 AS `loregroupmembercount` FROM `items` WHERE `id`=" + ItemID.ToString() + ";").Rows[0];
+        }
+
         private void Item_Preview(int ItemID)
         {
             if (!Item_ConfirmChange())
@@ -2920,20 +3185,28 @@ namespace EQEmuItemEditor
                 return;
             }
 
-            if ((PreviewItem == null) || (IntField("id") != ItemID))
+            if ((PreviewItem == null) || (OldItemID != ItemID))
             {
-                PreviewItem = GetData("SELECT *,0 AS `loregroupmembercount` FROM `items` WHERE `id`=" + ItemID.ToString() + ";").Rows[0];
-
-                if (IntField("loregroup") > 0)
+                if (ItemID > -1)
                 {
-                    PreviewItem["loregroupmembercount"] = GetData("SELECT COUNT(*) FROM `items` WHERE `loregroup`=" + TextField("loregroup") + ");").Rows[0][0];
-                }
+                    PreviewItem = Item_Load(ItemID);
 
-                Item = PreviewItem;
-                OldItemID = ItemID;
-                ChangedColumn.Clear();
-                UpdatePreviewBox(-1);
+                    if (IntField("loregroup") > 0)
+                    {
+                        PreviewItem["loregroupmembercount"] = GetInt("SELECT COUNT(*) FROM `items` WHERE `loregroup`=" + TextField("loregroup") + ");");
+                    }
+                }
+                else
+                {
+                    PreviewItem = null;
+                }
             }
+
+            Item = PreviewItem;
+            OldItemID = ItemID;
+            ChangedColumn.Clear();
+
+            UpdatePreviewBox(-1);
         }
 
         private void Item_New(object sender, EventArgs e)
@@ -2957,57 +3230,56 @@ namespace EQEmuItemEditor
 
             foreach (DataColumn _col in Item.Table.Columns)
             {
-                if (Item[_col].GetType().IsPrimitive)
-                {
-                    Item[_col] = 0;
-                }
-                else if (Item[_col].GetType().ToString() == "System.DateTime")
-                {
-                    Item[_col] = DateTime.UtcNow;
-                }
-                else if (Item[_col].GetType().ToString() == "System.DBNull")
-                {
-                    Item[_col] = DBNull.Value;
-                }
-                else
-                {
-                    Item[_col] = "";
-                }
+                Item[_col.ColumnName] = SQLDefault(_col);
             }
 
             Item["id"] = _i;
             Item["name"] = "New Item #" + _i.ToString();
-            Item["charmfileid"] = 0; // Null in integer field instead of 0 makes a TextBox throw up.
+            Item["nodrop"] = 1; // Disable "No Trade" flag for new items
+            Item["norent"] = 1; // Disable "Temporary" flag for new items
+            Item["classes"] = 0xFFFF; // Class: All by default (mostly for non-armor)
+            Item["races"] = 0xFFFF; // Race: All except Shroud by default (mostly for non-armor)
+            Item["ldonsellbackrate"] = 70; // This appears to be the EQLive default
+            Item["sellrate"] = 1.0f;
+            Item["idfile"] = "IT63"; // In 3D space appears as a tiny bag
+            Item["created"] = DateTime.UtcNow;
+
+            // No spell effects (-1) by default
+            Item["scrolleffect"] = -1;
+            Item["clickeffect"] = -1;
+            Item["proceffect"] = -1;
+            Item["worneffect"] = -1;
+            Item["focuseffect"] = -1;
+            Item["bardeffect"] = -1;
+
+            // VarChars in DB for some reason, but int fields.
+            Item["charmfileid"] = "0";
+            Item["combateffects"] = "0";
 
             switch (Item_Create())
             {
                 case -1:
                     MessageBox.Show(this, "Error: There was a problem creating blank item # " + _i.ToString() + " in the Items table.", "Error Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    Item = PreviewItem;
+                    CheckEditableState();
                     break;
                 case 0:
                     MessageBox.Show(this, "Weird: There was a glitch creating blank item # " + _i.ToString() + " in the Items table.\r\n\r\nThe database didn't report an error, but it did not insert the new item.", "Glitch Cloning Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Item = PreviewItem;
+                    CheckEditableState();
                     break;
                 default:
                     ChangedColumn.Clear();
-                    buttonItemSave.Enabled = false;
-                    editToolStripMenuItem.ForeColor = SystemColors.ControlText;
                     listSearchItems.SelectedItems.Clear();
                     PreviewItem = Item;
-                    UpdatePreviewBox(-1);
                     Item = null;
                     Item_EditMode();
                     break;
             }
         }
         
-        private void Item_Clone(object sender, EventArgs e)
+        private DialogResult Item_Clone()
         {
-            if (Item == null)
-            {
-                buttonItemClone.Enabled = false;
-                return;
-            }
-
             _i = GetInt("SELECT MAX(`id`) FROM `items`;");
             if (_i < 1001)
             {
@@ -3018,29 +3290,41 @@ namespace EQEmuItemEditor
                 _i++;
             }
 
-            int _oldItemID = IntField("id");
+            int _oldItemID = IntField("id"); // Might be different from OldItemID
             Item["id"] = _i;
+
+            string _name = Item["name"].ToString();
+            if (_name.EndsWith(")"))
+            {
+                _i = _name.LastIndexOf('(');
+                if (_i >= 0)
+                {
+                    _text = _name.Substring(_i + 1, _name.Length - _i - 2);
+                    if (int.TryParse(_text, out _j))
+                    {
+                        _j++;
+                        Item["name"] = _name.Substring(0, _i + 1) + _j.ToString() + ")";
+                    }
+                }
+
+            }
+            else
+            {
+                Item["name"] = _name + " (2)";
+            }
 
             switch (Item_Create())
             {
                 case -1:
-                    MessageBox.Show(this, "Error: There was a problem cloning this as item # " + Item["id"].ToString() + " to the Items table.", "Error Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show(this, "Error: There was a problem cloning item # " + _oldItemID.ToString() + " as item # " + Item["id"].ToString() + " in the Items table.", "Error Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     Item["id"] = _oldItemID;
-                    break;
+                    return DialogResult.Abort;
                 case 0:
-                    MessageBox.Show(this, "Weird: There was a glitch cloning this as item # " + Item["id"].ToString() + " to the Items table.\r\n\r\nThe database didn't report an error, but it did not insert the cloned item.", "Glitch Cloning Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, "Weird: There was a glitch cloning item # " + _oldItemID.ToString() + " as item # " + Item["id"].ToString() + " in the Items table.\r\n\r\nThe database didn't report an error, but it did not insert the cloned item.", "Glitch Cloning Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     Item["id"] = _oldItemID;
-                    break;
+                    return DialogResult.Abort;
                 default:
-                    ChangedColumn.Clear();
-                    buttonItemSave.Enabled = false;
-                    ItemLoading = true;
-                    textEditID.Text = Item["id"].ToString();
-                    ItemLoading = false;
-                    PreviewItem = Item;
-                    UpdatePreviewBox(-1);
-                    buttonSearchName_Click(buttonSearchName, null);
-                    break;
+                    return DialogResult.OK;
             }
         }
 
@@ -3071,25 +3355,10 @@ namespace EQEmuItemEditor
                     }
 
                     _columns.Append('`');
-                    _columns.Append(_col);
+                    _columns.Append(_col.ColumnName);
                     _columns.Append('`');
 
-                    if (Item[_col].GetType().ToString() == "System.DateTime")
-                    {
-                        _values.Append('\'');
-                        _values.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffff"));
-                        _values.Append('\'');
-                    }
-                    else if (Item[_col] == DBNull.Value)
-                    {
-                        _values.Append("null");
-                    }
-                    else
-                    {
-                        _values.Append('\'');
-                        _values.Append(Item[_col].ToString().Replace("'", "''"));
-                        _values.Append('\'');
-                    }
+                    _values.Append(SQLEncode(_col, Item[_col.ColumnName]));
                 }
             }
 
@@ -3105,7 +3374,8 @@ namespace EQEmuItemEditor
         {
             if (ChangedColumn.Count < 1)
             {
-                buttonItemSave.Enabled = false;
+                CheckEditableState();
+
                 return;
             }
 
@@ -3140,9 +3410,8 @@ namespace EQEmuItemEditor
                 }
                 ItemLine.Append('`');
                 ItemLine.Append(_col);
-                ItemLine.Append("`=\'");
-                ItemLine.Append(Item[_col].ToString().Replace("'", "''"));
-                ItemLine.Append('\'');
+                ItemLine.Append("`=");
+                ItemLine.Append(SQLEncode(Item.Table.Columns[_col], Item[_col]));
             }
 
             ItemLine.Append(" WHERE `id`=");
@@ -3160,43 +3429,24 @@ namespace EQEmuItemEditor
                 default:
                     OldItemID = IntField("id");
                     ChangedColumn.Clear();
-                    buttonItemSave.Enabled = false;
+                    CheckEditableState();
                     buttonSearchName_Click(buttonSearchName, null);
                     break;
             }
         }
 
-        private void Item_Delete(object sender, EventArgs e)
+        private DialogResult Item_Delete()
         {
-            if (Item == null)
-            {
-                buttonItemDelete.Enabled = false;
-                return;
-            }
-
-            if (MessageBox.Show(this, "WARNING: You are about to DELETE\r\n\r\n" + TextField("name") + " (" + OldItemID.ToString() + ").\r\n\r\nAre you SURE you wish to do this?", "Delete Item Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
-            {
-                return;
-            }
-
             switch (Execute("DELETE FROM `items` WHERE `id`=" + OldItemID.ToString()))
             {
                 case -1:
                     MessageBox.Show(this, "Error: There was a problem deleting item # " + OldItemID.ToString() + " from the Items table.", "Error Deleting Item", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                    break;
+                    return DialogResult.Abort;
                 case 0:
                     MessageBox.Show(this, "Weird: There was a glitch deleting item # " + OldItemID.ToString() + " from the Items table.\r\n\r\nThe database said it couldn't find that item, so it did nothing.", "Glitch Saving Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
+                    return DialogResult.Abort;
                 default:
-                    ChangedColumn.Clear();
-                    buttonItemSave.Enabled = false;
-                    searchToolStripMenuItem_Click(searchToolStripMenuItem, null);
-                    buttonSearchName_Click(buttonSearchName, null);
-                    OldItemID = -1;
-                    Item = null;
-                    PreviewItem = null;
-                    editToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
-                    break;
+                    return DialogResult.OK;
             }
         }
 
@@ -3213,7 +3463,8 @@ namespace EQEmuItemEditor
 
                 IconCategories.Add("");
 
-                List<string> _iconExtensions = new List<string>(new string[] {".png", ".gif", ".bmp", ".tga" });
+                // TODO: TGA support
+                List<string> _iconExtensions = new List<string>(new string[] {".png", ".gif", ".bmp", ".jpg", ".jpeg" });
 
                 string _category;
                 string[] _icons;
@@ -3248,7 +3499,8 @@ namespace EQEmuItemEditor
                             string _justNum = Path.GetFileNameWithoutExtension(_icon);
                             if (int.TryParse(_justNum, out _iconNum))
                             {
-                                if ((_iconNum >= 500) && (_iconNum <= 2253)) // Last Icon: Titanium = 1700, SoF = 2253, RoF2 = 6898
+                                // Last Icon: Titanium = 1700, SoF = 2253, RoF2 = 6898
+                                if ((_iconNum >= 500) && (_iconNum <= 2253))
                                 {
                                     CategoryOfIcon[_iconNum] = _catindex;
                                     _iconsInCat.Add(_iconNum);
@@ -3308,10 +3560,7 @@ namespace EQEmuItemEditor
 
                 if (_textbox != null)
                 {
-                    if (_textbox.Name != "textEditDebug")
-                    {
-                        _textbox.TextChanged += this.formTextbox_Changed;
-                    }
+                    _textbox.TextChanged += this.formTextbox_Changed;
                 }
                 else if (_combobox != null)
                 {
@@ -3375,6 +3624,9 @@ namespace EQEmuItemEditor
             if (BoxNumber < 0)
             {
                 // UpdatePreviewBox(-1) == Update All Preview Boxes
+                iconPreview.Image = null;
+                UpdatePreviewBox(99);
+
                 for (BoxNumber = 0; BoxNumber < 20; BoxNumber++)
                 {
                     UpdatePreviewBox(BoxNumber, true);
@@ -3382,6 +3634,8 @@ namespace EQEmuItemEditor
             }
             else if (BoxNumber >= 100)
             {
+                // UpdatePreviewBox(208) == Update(2) and Update(8)
+                
                 UpdatePreviewBox(BoxNumber / 100, true);
                 UpdatePreviewBox(BoxNumber % 100, true);
             }
@@ -3400,47 +3654,50 @@ namespace EQEmuItemEditor
                     _textbox.Text = "";
                 }
 
-                switch (BoxNumber)
+                if (PreviewItem != null)
                 {
-                    case 0:
-                        UpdatePreviewBox0(); // Basics: ID, Name, Icon, ItemType. ItemType change requires ALL updated => UpdatePreviewBox(-1);
-                        break;
-                    case 1:
-                        UpdatePreviewBox1(); // Under name: Flags, Races, Classes, Deities, Slots
-                        break;
-                    case 2:
-                        UpdatePreviewBox2(); // Upper-left. Size, Weight, Container Stats, Rec/Req Levels, Weapon Type
-                        break;
-                    case 3:
-                        UpdatePreviewBox3(); // Upper-middle: AC/HP/Mana/Endurance/Purity
-                        break;
-                    case 4:
-                        UpdatePreviewBox4(); // Upper-right: Weapon Damages and Delay
-                        break;
-                    case 5:
-                        UpdatePreviewBox5(); // Lower-left: Character stats
-                        break;
-                    case 6:
-                        UpdatePreviewBox6(); // Lower-middle: Character Resists
-                        break;
-                    case 7:
-                        UpdatePreviewBox7(); // Lower-right: mod2s
-                        break;
-                    case 8:
-                        UpdatePreviewBox8(); // Augmentation Slots, Lore Group, Container Type
-                        break;
-                    case 9:
-                        UpdatePreviewBox9(); // Spell Effects (Click, Combat, Worn, Focus, Instruments)
-                        break;
-                    case 10:
-                        UpdatePreviewBox10(); // Misc: Slots an augment fits into, Charges, Tradeskills, Food/Drink, Bane DMG, Augment Restriction/Solvent
-                        break;
-                    case 11:
-                        UpdatePreviewBox11();
-                        break;
-                    case 12:
-                        UpdatePreviewBox12();
-                        break;
+                    switch (BoxNumber)
+                    {
+                        case 0:
+                            UpdatePreviewBox0(); // Basics: ID, Name, Icon, ItemType. ItemType change requires ALL updated => UpdatePreviewBox(-1);
+                            break;
+                        case 1:
+                            UpdatePreviewBox1(); // Under name: Flags, Races, Classes, Deities, Slots
+                            break;
+                        case 2:
+                            UpdatePreviewBox2(); // Upper-left. Size, Weight, Container Stats, Rec/Req Levels, Weapon Type
+                            break;
+                        case 3:
+                            UpdatePreviewBox3(); // Upper-middle: AC/HP/Mana/Endurance/Purity
+                            break;
+                        case 4:
+                            UpdatePreviewBox4(); // Upper-right: Weapon Damages and Delay
+                            break;
+                        case 5:
+                            UpdatePreviewBox5(); // Lower-left: Character stats
+                            break;
+                        case 6:
+                            UpdatePreviewBox6(); // Lower-middle: Character Resists
+                            break;
+                        case 7:
+                            UpdatePreviewBox7(); // Lower-right: mod2s
+                            break;
+                        case 8:
+                            UpdatePreviewBox8(); // Augmentation Slots, Lore Group, Container Type
+                            break;
+                        case 9:
+                            UpdatePreviewBox9(); // Spell Effects (Click, Combat, Worn, Focus, Instruments)
+                            break;
+                        case 10:
+                            UpdatePreviewBox10(); // Misc: Slots an augment fits into, Charges, Tradeskills, Food/Drink, Bane DMG, Augment Restriction/Solvent
+                            break;
+                        case 11:
+                            UpdatePreviewBox11();
+                            break;
+                        case 12:
+                            UpdatePreviewBox12();
+                            break;
+                    }
                 }
             }
 
@@ -3470,9 +3727,7 @@ namespace EQEmuItemEditor
                 
                 textPreviewBox99.Top = textPreviewBox12.Bottom; // -((textPreviewBox12.Text.Length == 0) ? 15 : 0);
 
-                buttonItemSave.Enabled = ChangedColumn.Count > 0;
-                buttonItemDelete.Enabled = (Item != null);
-                buttonItemClone.Enabled = (Item != null);
+                CheckEditableState();
             }
         }
 
