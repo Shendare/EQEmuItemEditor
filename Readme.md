@@ -1,7 +1,7 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.1
+Current Version: 1.1.1
 
 Last Updated: 8/11/2015
 
@@ -42,6 +42,17 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 >https://creativecommons.org/publicdomain/zero/1.0/
 
 #Release Notes:
+
+
+8/11/2015 - Version 1.1.1
+
+* Fixed: Put maximum lengths onto text fields based on the columns in the database, to prevent errors saving when text is too long.
+         The maximum lengths are not being sent over by the database (they show -1), so I have to hard-code them.
+
+* Fixed: Waist and Ammo armor slot checkboxes weren't displaying correctly.
+
+* Fixed: The New item button was confusing the search list and preview window. Straightened it out.
+
 
 8/11/2015 - Version 1.1
 

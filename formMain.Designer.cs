@@ -558,7 +558,7 @@
             "Feet",
             "Waist",
             "Ammo"});
-            this.listEditSlots.Location = new System.Drawing.Point(6, 343);
+            this.listEditSlots.Location = new System.Drawing.Point(6, 342);
             this.listEditSlots.MultiColumn = true;
             this.listEditSlots.Name = "listEditSlots";
             this.listEditSlots.Size = new System.Drawing.Size(200, 150);
@@ -1176,6 +1176,7 @@
             // textEditName
             // 
             this.textEditName.Location = new System.Drawing.Point(71, 6);
+            this.textEditName.MaxLength = 64;
             this.textEditName.Name = "textEditName";
             this.textEditName.Size = new System.Drawing.Size(187, 20);
             this.textEditName.TabIndex = 1;
@@ -1872,6 +1873,7 @@
             // textEditIDFile
             // 
             this.textEditIDFile.Location = new System.Drawing.Point(332, 472);
+            this.textEditIDFile.MaxLength = 30;
             this.textEditIDFile.Name = "textEditIDFile";
             this.textEditIDFile.Size = new System.Drawing.Size(113, 20);
             this.textEditIDFile.TabIndex = 48;
@@ -1880,7 +1882,7 @@
             // textEditFilename
             // 
             this.textEditFilename.Location = new System.Drawing.Point(337, 342);
-            this.textEditFilename.MaxLength = 10;
+            this.textEditFilename.MaxLength = 32;
             this.textEditFilename.Name = "textEditFilename";
             this.textEditFilename.Size = new System.Drawing.Size(108, 20);
             this.textEditFilename.TabIndex = 18;
@@ -3747,6 +3749,7 @@
             // textEditCombatEffects
             // 
             this.textEditCombatEffects.Location = new System.Drawing.Point(388, 207);
+            this.textEditCombatEffects.MaxLength = 10;
             this.textEditCombatEffects.Name = "textEditCombatEffects";
             this.textEditCombatEffects.Size = new System.Drawing.Size(37, 20);
             this.textEditCombatEffects.TabIndex = 36;
@@ -5318,6 +5321,7 @@
             // textEditLore
             // 
             this.textEditLore.Location = new System.Drawing.Point(66, 471);
+            this.textEditLore.MaxLength = 80;
             this.textEditLore.Name = "textEditLore";
             this.textEditLore.Size = new System.Drawing.Size(376, 20);
             this.textEditLore.TabIndex = 112;
@@ -6995,6 +6999,7 @@
             // textEditCharmFile
             // 
             this.textEditCharmFile.Location = new System.Drawing.Point(112, 332);
+            this.textEditCharmFile.MaxLength = 32;
             this.textEditCharmFile.Name = "textEditCharmFile";
             this.textEditCharmFile.Size = new System.Drawing.Size(116, 20);
             this.textEditCharmFile.TabIndex = 40;

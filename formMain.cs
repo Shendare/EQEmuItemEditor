@@ -2189,6 +2189,11 @@ namespace EQEmuItemEditor
 
         private void listSearchItems_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
+            if (ItemLoading)
+            {
+                return;
+            }
+            
             CheckEditableState();
 
             if (e.IsSelected)
@@ -3045,7 +3050,7 @@ namespace EQEmuItemEditor
 
                     _checklist.SetItemChecked(0, _number == 0x3FFFFF);
 
-                    for (_slot = 1; _slot < Slots.Length - 1; _slot++)
+                    for (_slot = 1; _slot < Slots.Length + 1; _slot++)
                     {
                         switch (_slot)
                         {
@@ -3270,7 +3275,9 @@ namespace EQEmuItemEditor
                     break;
                 default:
                     ChangedColumn.Clear();
+                    ItemLoading = true;
                     listSearchItems.SelectedItems.Clear();
+                    ItemLoading = false;
                     PreviewItem = Item;
                     Item = null;
                     Item_EditMode();
