@@ -98,7 +98,7 @@ namespace EQEmuItemEditor
             "Veeshan",
         };
 
-        public static string[] Slots = new string[] {
+		public static string[] SlotNames = new string[] {
             "Charm",
             "Ear",
             "Head",
@@ -122,6 +122,28 @@ namespace EQEmuItemEditor
             "Waist",
             "Ammo"
         };
+
+		public static int[] SlotFlags = new int[] {
+			1 << 0,				// Charm
+			1 << 1 | 1 << 4,	// Ear1 + Ear2
+			1 << 2,				// Head
+			1 << 3,				// Face
+			1 << 5,				// Neck
+			1 << 6,				// Shoulders
+			1 << 7,				// Arms
+			1 << 8,				// Back
+			1 << 9 | 1 << 10,	// Wrist1 + Wrist2
+			1 << 11,			// Range
+			1 << 12,			// Hands
+			1 << 13,			// Primary
+			1 << 14,			// Secondary
+			1 << 15 | 1 << 16,	// Fingers1 + Fingers2
+			1 << 17,			// Chest
+			1 << 18,			// Legs
+			1 << 19,			// Feet
+			1 << 20,			// Waist
+			1 << 21				// Ammo
+		};
 
         public static string[] Languages = new string[] {
             "Common",
@@ -1305,7 +1327,10 @@ namespace EQEmuItemEditor
         public Point IconPickerWindowCoords = new Point(0,0);
         public bool IconPickerWindowCoordsValid = false;
 
-        public bool DBLoaded = false;
+		public string DBError = "";
+		public bool DBLoaded = false;
+		public bool DBConnected = false;
+		public bool DBTested = false;
         public bool EditableState = false;
 
         public Dictionary<string, bool> ChangedColumn = new Dictionary<string, bool>();
@@ -1317,15 +1342,7 @@ namespace EQEmuItemEditor
         public Dictionary<int, string> FactionNames = new Dictionary<int, string>();
         public Dictionary<int, string> ItemNames = new Dictionary<int, string>();
 
-        // Moved local general use variables to class properties just so they don't need to be defined
-        // separately in each UpdatePreviewBox() method.  It's nice having all of the rendering logic
-        // split up into separate methods like it is.
-        private int _i, _j;
-        private string _text;
-        private string _text2;
-        private string _text3;
-
-        #region Form Event Handlers
+		#region Form Event Handlers
 
         public formMain()
         {
@@ -1335,16 +1352,6 @@ namespace EQEmuItemEditor
 
             ItemLoading = true;
 
-            Dictionary<int, string> _clickTypes = new Dictionary<int, string>();
-            _clickTypes.Add(0, "Standard Item Effect Activation");
-            _clickTypes.Add(1, "Any Slot, No Race/Class Check");
-            _clickTypes.Add(2, "Not Used (2)");
-            _clickTypes.Add(3, "Any Slot, No Check, Expendable");
-            _clickTypes.Add(4, "Must Equip in order to Activate");
-            _clickTypes.Add(5, "Any Slot, Must be Able to Equip");
-            listEditClickType.DataSource = new BindingSource(_clickTypes, null);
-            listEditClickType.ValueMember = "Key";
-            listEditClickType.DisplayMember = "Value";
             listEditScrollTypeShow.SelectedIndex = 0;
             listEditProcTypeShow.SelectedIndex = 0;
             listEditWornTypeShow.SelectedIndex = 0;
@@ -1531,9 +1538,56 @@ namespace EQEmuItemEditor
 
                         listSearchItems.Items.Add(_item);
                     }
-            }
+				}
+
+				buttonSearchName.Enabled = false;
             }
         }
+
+		private void buttonTestDatabase_Click(object sender, EventArgs e)
+		{
+			if ((Settings.Database.Conn != textDBConn.Text) ||
+				(Settings.Database.Host != textDBHost.Text) ||
+				(Settings.Database.Name != textDBName.Text) ||
+				(Settings.Database.User != textDBUser.Text) ||
+				(Settings.Database.Pass != textDBPass.Text) ||
+				(Settings.Database.Port != textDBPort.Text))
+			{
+				Settings.Database.Conn = textDBConn.Text;
+				Settings.Database.Host = textDBHost.Text;
+				Settings.Database.Name = textDBName.Text;
+				Settings.Database.User = textDBUser.Text;
+				Settings.Database.Pass = textDBPass.Text;
+				Settings.Database.Port = textDBPort.Text;
+
+				Settings.Save();
+
+				DBLoaded = false;
+				DBConnected = false;
+			}
+
+			if (CheckDBConnection())
+			{
+				DBTested = true;
+
+				string _message = "Connection is good!\r\n\r\nThe search screen beckons";
+				
+				if (labelIconFolder.Text == "")
+				{
+					_message += ", but be sure to set the Icons folder first!";
+				}
+				else
+				{
+					_message += "...";
+				}
+				
+				MessageBox.Show(this, _message, "Database Connection Good", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			}
+			else
+			{
+				MessageBox.Show(this, "Connection was unsuccessful. The error message received was:\r\n\r\n" + DBError, "Database Connection Good", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
 
         private void editToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -1589,30 +1643,24 @@ namespace EQEmuItemEditor
         {
             CheckEditableState();
             
-            if (!DBLoaded)
+            ResetOptionFields();
+
+            if (CheckDBConnection())
             {
-                ResetOptionFields();
+				DBTested = true;
 
-                if (GetData("SELECT 1;").Rows[0][0].ToString() == "")
-                {
-                    // Error connecting to database
+				searchToolStripMenuItem.ForeColor = SystemColors.ControlText;
+				labelLoading.BringToFront();
+				labelLoading.Visible = true;
 
-                    optionsToolStripMenuItem_Click(null, null);
-                }
-                else
-                {
-                    labelLoading.BringToFront();
-                    labelLoading.Visible = true;
-
-                    timerLoading.Enabled = true;
-                }
-            }
+				timerLoading.Enabled = true;
+			}
             else
             {
-                if ((itemIcons.Tag == null) && (itemIcons.Images.Count == 0))
-                {
-                    timerLoading.Enabled = true;
-                }
+				// Error connecting to database
+
+				searchToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
+				optionsToolStripMenuItem_Click(null, null);
             }
         }
 
@@ -1787,29 +1835,17 @@ namespace EQEmuItemEditor
                                 _box.SetItemChecked(_index, _checked);
                             }
                             break;
-                        case 2: // Ear
-                            _box.SetItemChecked(0, false);
+                        default: // Individual Slot
+							_box.SetItemChecked(0, false);
 
-                            SetField(_field, IntField(_field) ^ 0x000012);
-                            break;
-                        case 9: // Wrist
-                            _box.SetItemChecked(0, false);
-
-                            SetField(_field, IntField(_field) ^ 0x000600);
-                            break;
-                        case 14: // Fingers
-                            _box.SetItemChecked(0, false);
-
-                            SetField(_field, IntField(_field) ^ 0x018000);
-                            break;
-                        default:
-                            _box.SetItemChecked(0, false);
-
-                            _index += (_index > 4) ? 1 : 0;
-                            _index += (_index > 10) ? 1 : 0;
-                            _index += (_index > 16) ? 1 : 0;
-
-                            SetField(_field, IntField(_field) ^ (1 << (_index - 1)));
+							if (_checked)
+							{
+								SetField(_field, IntField(_field) | SlotFlags[_index - 1]);
+							}
+							else
+							{
+								SetField(_field, IntField(_field) & ~SlotFlags[_index - 1]);
+							}
                             break;
                     }
                     break;
@@ -1970,7 +2006,11 @@ namespace EQEmuItemEditor
                 case "textdbport":
                 case "textdbuser":
                 case "textdbpass":
-                    ItemLoading = false;
+					DBConnected = false;
+					DBLoaded = false;
+					DBTested = false;
+					searchToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
+					ItemLoading = false;
                     return;
                 case "textdbhost":
                     if (_value.Trim().Equals("localhost", StringComparison.CurrentCultureIgnoreCase))
@@ -1978,6 +2018,10 @@ namespace EQEmuItemEditor
                         _box.Text = "127.0.0.1";
                         labelDBHostNote.Visible = true;
                     }
+					DBConnected = false;
+					DBLoaded = false;
+					DBTested = false;
+					searchToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
                     ItemLoading = false;
                     return;
                 default: // Item Field!
@@ -2228,59 +2272,32 @@ namespace EQEmuItemEditor
 
         private void searchToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (ItemLoading)
-            {
-                return;
-            }
+			if (Settings.IconFolder != labelIconFolder.Text)
+			{
+				Settings.IconFolder = labelIconFolder.Text;
 
-            ItemLoading = true;
+				Settings.Save();
 
-            if (panelOptions.Visible)
-            {
-                // Options Panel Open. Did we make changes?
+				itemIcons.Images.Clear();
+				itemIcons.Tag = null;
+			}
 
-                if (Settings.IconFolder != labelIconFolder.Text)
-                {
-                    Settings.IconFolder = labelIconFolder.Text;
-                    
-                    itemIcons.Images.Clear();
-                    itemIcons.Tag = null;
-                }
+			if (DBTested)
+			{
+				if (DBLoaded && itemIcons.Tag != null)
+				{
+					panelSearch.Visible = true;
+					panelEdit.Visible = false;
+					panelOptions.Visible = false;
+				}
+				else if (CheckDBConnection())
+				{
+					labelLoading.BringToFront();
+					labelLoading.Visible = true;
 
-                if ((Settings.Database.Conn != textDBConn.Text) ||
-                    (Settings.Database.Host != textDBHost.Text) ||
-                    (Settings.Database.Name != textDBName.Text) ||
-                    (Settings.Database.User != textDBUser.Text) ||
-                    (Settings.Database.Pass != textDBPass.Text) ||
-                    (Settings.Database.Port != textDBPort.Text))
-                {
-                    Settings.Database.Conn = textDBConn.Text;
-                    Settings.Database.Host = textDBHost.Text;
-                    Settings.Database.Name = textDBName.Text;
-                    Settings.Database.User = textDBUser.Text;
-                    Settings.Database.Pass = textDBPass.Text;
-                    Settings.Database.Port = textDBPort.Text;
-
-                    if (DBLoaded) // Reconfirm database connection in case something changed
-                    {
-                        DBLoaded = (GetData("SELECT 1;").Rows[0][0].ToString() != "");
-                    }
-                }
-
-                Settings.Save();
-            }
-
-            // Confirm we've got a database connection
-            formMain_Load(null, null);
-            
-            if (DBLoaded)
-            {
-                panelSearch.Visible = true;
-                panelEdit.Visible = false;
-                panelOptions.Visible = false;
-            }
-
-            ItemLoading = false;
+					timerLoading.Enabled = true;
+				}
+			}
         }
 
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
@@ -2316,7 +2333,9 @@ namespace EQEmuItemEditor
 
         private void timerLoading_Tick(object sender, EventArgs e)
         {
-            timerLoading.Enabled = false;
+			int _i, _j;
+
+			timerLoading.Enabled = false;
 
             ItemLoading = true;
 
@@ -2400,7 +2419,9 @@ namespace EQEmuItemEditor
                 }
                 _factionNames.Dispose();
 
-                DBLoaded = true;
+				buttonSearchName.Enabled = true;
+				
+				DBLoaded = true;
             }
 
             if ((itemIcons.Tag == null) && (itemIcons.Images.Count == 0))
@@ -2415,7 +2436,9 @@ namespace EQEmuItemEditor
 
             labelLoading.Visible = false;
             labelLoading.SendToBack();
-        }
+
+			searchToolStripMenuItem_Click(searchToolStripMenuItem, null);
+		}
 
         #endregion
 
@@ -2437,7 +2460,25 @@ namespace EQEmuItemEditor
             }
         }
 
-        private void CheckEditableState()
+        private bool CheckDBConnection()
+		{
+			if (GetInt("SELECT 1;") == 1)
+			{
+				DBConnected = true;
+
+				searchToolStripMenuItem.ForeColor = SystemColors.ControlText;
+			}
+			else
+			{
+				DBConnected = false;
+
+				searchToolStripMenuItem.ForeColor = SystemColors.ScrollBar;
+			}
+
+			return DBConnected;
+		}
+		
+		private void CheckEditableState()
         {
             if (listSearchItems.SelectedItems.Count == 1)
             {
@@ -2515,6 +2556,8 @@ namespace EQEmuItemEditor
 
             DataTable _dt = new DataTable();
 
+			DBError = "";
+
             using (OdbcConnection _dbconn = new OdbcConnection(_connStr))
             {
                 try
@@ -2533,9 +2576,18 @@ namespace EQEmuItemEditor
                         _adap.Dispose();
                     }
                 }
-                catch
+                catch (Exception _ex)
                 {
-                    _dt.Columns.Add("Empty", typeof(string));
+					DBError = _ex.Message;
+
+					if (DBError.Substring(0,(DBError.Length >> 1) - 1).Equals(DBError.Substring((DBError.Length >> 1) + 1)))
+					{
+						// ODBC is doubling up error messages for some reason.
+
+						DBError = DBError.Substring(0, (DBError.Length >> 1) - 1);
+					}
+
+					_dt.Columns.Add("Empty", typeof(string));
                 }
 
                 if (_dt.Rows.Count < 1)
@@ -2948,7 +3000,7 @@ namespace EQEmuItemEditor
             // Forgot this part in 1.0. My bad...
             tabEditUnrecognized.Controls.Clear();
             
-            _i = 0;
+            int _i = 0;
             foreach (string _unusedColumn in _unusedColumns)
             {
                 Label _unusedLabel = new Label();
@@ -3046,24 +3098,15 @@ namespace EQEmuItemEditor
                     }
                     break;
                 case "slots":
-                    int _slotCount = 1;
+                    // "All"
+					_checklist.SetItemChecked(0, _number == 0x3FFFFF);
 
-                    _checklist.SetItemChecked(0, _number == 0x3FFFFF);
-
-                    for (_slot = 1; _slot < Slots.Length + 1; _slot++)
-                    {
-                        switch (_slot)
-                        {
-                            case 4:
-                            case 10:
-                            case 16:
-                                break;
-                            default:
-                                _checklist.SetItemChecked(_slotCount++, (_number & (1 << (_slot - 1))) != 0);
-                                break;
-                        }
-                    }
-                    break;
+					for (_slot = 1; _slot < _checklist.Items.Count; _slot++)
+					{
+						_checklist.SetItemChecked(_slot,
+							(_number & SlotFlags[_slot - 1]) != 0);
+					}
+					break;
                 case "color":
                     long _tint = long.Parse(Value); // Would have gone with a uint, myself, but it's a long in the database
                     boxColorTint.BackColor = Color.FromArgb((int)_tint);
@@ -3216,12 +3259,12 @@ namespace EQEmuItemEditor
 
         private void Item_New(object sender, EventArgs e)
         {
-            if (!Item_ConfirmChange())
+			if (!Item_ConfirmChange())
             {
                 return;
             }
 
-            _i = GetInt("SELECT MAX(`id`) FROM `items`;");
+            int _i = GetInt("SELECT MAX(`id`) FROM `items`;");
             if (_i < 1001)
             {
                 _i = 1001;
@@ -3287,7 +3330,10 @@ namespace EQEmuItemEditor
         
         private DialogResult Item_Clone()
         {
-            _i = GetInt("SELECT MAX(`id`) FROM `items`;");
+			int _i, _j;
+			string _text;
+
+			_i = GetInt("SELECT MAX(`id`) FROM `items`;");
             if (_i < 1001)
             {
                 _i = 1001;
@@ -3741,7 +3787,9 @@ namespace EQEmuItemEditor
         // Basics: ID, Name, Icon, ItemType
         private void UpdatePreviewBox0()
         {
-            try
+			int _i;
+
+			try
             {
                 iconPreview.Image = itemIcons.Images[TextField("icon")];
             }
@@ -3813,7 +3861,12 @@ namespace EQEmuItemEditor
         // Under name: Flags, Evolving, Races, Classes, Deities, Slots
         private void UpdatePreviewBox1()
         {
-            ItemLine.Length = 0;
+			int _i, _j;
+			string _text;
+			string _text2;
+			string _text3;
+
+			ItemLine.Length = 0;
             AppendIf("magic", "Magic, ");
             AppendIf("loregroup", "Lore, ");
             AppendIf("artifactflag", "Artifact, ");
@@ -4002,7 +4055,7 @@ namespace EQEmuItemEditor
                     break;
                 default:
                     ItemLine.Length = 0;
-                    for (_j = 0; _j < Slots.Length; _j++)
+                    for (_j = 0; _j < SlotNames.Length; _j++)
                     {
                         switch (_j)
                         {
@@ -4013,7 +4066,7 @@ namespace EQEmuItemEditor
                             default:
                                 if ((_i & (1 << _j)) != 0)
                                 {
-                                    ItemLine.Append(Slots[_j]);
+                                    ItemLine.Append(SlotNames[_j]);
                                     ItemLine.Append(", ");
                                 }
                                 break;
@@ -4028,7 +4081,10 @@ namespace EQEmuItemEditor
         // Upper-left: Size, Weight, Container Stats, Rec/Req Levels, Weapon Type
         private void UpdatePreviewBox2()
         {
-            _i = IntField("size");
+			int _i;
+			string _text;
+
+			_i = IntField("size");
             AddField(2, "Size:", "", SizeNames[((_i < 0) || (_i > 5)) ? 5 : _i]);
 
             if ((ItemGroup != ItemGroups.Augmentation) && (ItemGroup != ItemGroups.Benefit))
@@ -4074,7 +4130,9 @@ namespace EQEmuItemEditor
         // Upper-middle: AC, HP, Mana, Endurance, Purity, Haste
         private void UpdatePreviewBox3()
         {
-            AddField(3, "AC:");
+			string _text;
+
+			AddField(3, "AC:");
             AddField(3, "HP:");
             AddField(3, "Mana:");
             AddField(3, "End:", "Endur");
@@ -4089,6 +4147,7 @@ namespace EQEmuItemEditor
         private void UpdatePreviewBox4()
         {
             AddField(4, "Base Dmg:", "damage");
+			int _i;
 
             _i = IntField("elemdmgtype");
             if ((_i > 0) && (_i < Resists.Length))
@@ -4106,7 +4165,9 @@ namespace EQEmuItemEditor
         // Lower-left: Character stats
         private void UpdatePreviewBox5()
         {
-            AddField(5, "Strength:", "astr");
+			string _text;
+
+			AddField(5, "Strength:", "astr");
             AddField(5, "Stamina:", "asta");
             AddField(5, "Intelligence:", "aint");
             AddField(5, "Wisdom:", "awis");
@@ -4127,7 +4188,9 @@ namespace EQEmuItemEditor
         // Lower-middle: Character Resists
         private void UpdatePreviewBox6()
         {
-            AddField(6, "Magic:", "MR");
+			string _text;
+
+			AddField(6, "Magic:", "MR");
             AddField(6, "Fire:", "FR");
             AddField(6, "Cold:", "CR");
             AddField(6, "Disease:", "DR");
@@ -4146,7 +4209,9 @@ namespace EQEmuItemEditor
         // Lower-right: mod2s
         private void UpdatePreviewBox7()
         {
-            AddField(7, "Attack:");
+			int _i, _j;
+
+			AddField(7, "Attack:");
             AddField(7, "HP Regen:", "regen");
             AddField(7, "Mana Regen:", "manaregen");
             AddField(7, "Endur Regen:", "enduranceregen");
@@ -4183,7 +4248,11 @@ namespace EQEmuItemEditor
         // Faction Modifiers, Augmentation Slots, Lore Group, Container Type, Lore Text
         private void UpdatePreviewBox8()
         {
-            for (_i = 1; _i <= 4; _i++)
+			int _i, _j = 0;
+			string _text;
+			string _text2;
+
+			for (_i = 1; _i <= 4; _i++)
             {
                 if ((_text = TextField("factionmod" + _i.ToString())) != "0")
                 {
@@ -4303,7 +4372,12 @@ namespace EQEmuItemEditor
         // Spell Effects (Scroll, Click, Combat, Worn, Focus, Instruments)
         private void UpdatePreviewBox9()
         {
-            // Clear spell effects descriptions
+			int _i, _j;
+			string _text;
+			string _text2;
+			string _text3;
+
+			// Clear spell effects descriptions
             UpdatePreviewBox(99, true);
             
             if ((_i = IntField("scrolleffect")) > 0)
@@ -4610,7 +4684,11 @@ namespace EQEmuItemEditor
         // Misc: Book, Slots an augment fits into, Charges, Potion Belt, Tradeskills, Food/Drink, Bane DMG, Augment Restriction/Solvent
         private void UpdatePreviewBox10()
         {
-            if (ItemGroup == ItemGroups.Augmentation)
+			int _i, _j;
+			string _text;
+			string _text2;
+
+			if (ItemGroup == ItemGroups.Augmentation)
             {
                 ItemLine.Length = 0;
                 ItemLine.Append("This Augmentation fits in slot types: ");

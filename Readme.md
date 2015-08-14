@@ -1,9 +1,9 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.1.1
+Current Version: 1.1.2
 
-Last Updated: 8/11/2015
+Last Updated: 8/14/2015
 
 Github Link: https://github.com/Shendare/EQEmuItemEditor
 
@@ -43,6 +43,14 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 
 #Release Notes:
 
+
+8/14/2015 - Version 1.1.2
+
+* Fixed: The Slots checklist logic has been completely redone. It should no longer be flakey.
+
+* Improved: Clarified the database connection process, which was somewhat obtuse before. There is now a Test Connection button below the database setting fields, and clicking it will result in a confirmation or error message, depending on the results of the connection test. You must test a new or modified connection before performing a search.
+
+* Improved: After performing a search, the Search button will disable itself until you make a change to the search terms or database connection. This will prevent accidental multi-clicks and will let you know if a search was successfully performed and there were simply no matches.
 
 8/11/2015 - Version 1.1.1
 
