@@ -1,9 +1,9 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.1.2
+Current Version: 1.1.3
 
-Last Updated: 8/14/2015
+Last Updated: 8/19/2015
 
 Github Link: https://github.com/Shendare/EQEmuItemEditor
 
@@ -43,6 +43,10 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 
 #Release Notes:
 
+8/23/2015 - Version 1.1.3
+
+* Fixed: Post-SoF item icons in the icon folder will now load and display properly.
+
 
 8/14/2015 - Version 1.1.2
 
@@ -51,6 +55,7 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 * Improved: Clarified the database connection process, which was somewhat obtuse before. There is now a Test Connection button below the database setting fields, and clicking it will result in a confirmation or error message, depending on the results of the connection test. You must test a new or modified connection before performing a search.
 
 * Improved: After performing a search, the Search button will disable itself until you make a change to the search terms or database connection. This will prevent accidental multi-clicks and will let you know if a search was successfully performed and there were simply no matches.
+
 
 8/11/2015 - Version 1.1.1
 
@@ -93,11 +98,9 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 * Improved: Clarified discard changes prompt for items where the ID has been changed
 
 
-
 8/10/2015 - Version 1.0.1
 
 * Fixed glitch with saving or deleting new items, or changing an item's id
-
 
 
 8/9/2015 - Version 1.0

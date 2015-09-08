@@ -3553,7 +3553,7 @@ namespace EQEmuItemEditor
                             if (int.TryParse(_justNum, out _iconNum))
                             {
                                 // Last Icon: Titanium = 1700, SoF = 2253, RoF2 = 6898
-                                if ((_iconNum >= 500) && (_iconNum <= 2253))
+                                if ((_iconNum >= 500))// && (_iconNum <= 2253))
                                 {
                                     CategoryOfIcon[_iconNum] = _catindex;
                                     _iconsInCat.Add(_iconNum);
