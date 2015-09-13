@@ -1,9 +1,9 @@
 ﻿EQEmu Item Editor
 -----------
 
-Current Version: 1.1.3
+Current Version: 1.2
 
-Last Updated: 8/19/2015
+Last Updated: 9/12/2015
 
 Github Link: https://github.com/Shendare/EQEmuItemEditor
 
@@ -43,7 +43,29 @@ To Download: https://github.com/Shendare/EQEmuItemEditor/releases
 
 #Release Notes:
 
-8/23/2015 - Version 1.1.3
+9/12/2015 - Version 1.2
+
+* Added: Option to auto-set item Class restrictions when you choose an ItemType. Default is ON.
+
+		 Note: Some items are exceptions to the standard class restrictions (e.g., Druids and scimitars). You'll
+		       need to add any non-standard classes to the restriction list after they're auto-set from itemtype.
+
+* Added: Option to auto-set item 3D model when you choose an Item Icon. Default is ON.
+
+         Note: A good number of icons were made with a specific item model in mind. Those have been chosen where
+		       possible. Plenty weren't, though, and those I've tried to find the most appropriate model to
+			   represent. With some there simply isn't anything, though, so they get the default bag (IT63).
+			   I also was working with only SoF icons and models. It looks like options really opened up for non-
+			   weapon, non-armor icons and models with SoD or Underfoot.
+
+* Improved: Search panel will no longer lose track of which item you're editing after an item is Saved.
+
+* Improved: A successful Database test in Options will now automatically switch you to the Search screen.
+
+* Changed: Now that there are more than just Database options, changed "Test Database" button to "Apply Settings".
+
+
+8/19/2015 - Version 1.1.3
 
 * Fixed: Post-SoF item icons in the icon folder will now load and display properly.
 

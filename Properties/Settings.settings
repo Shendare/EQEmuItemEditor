@@ -26,5 +26,11 @@
     <Setting Name="DBPort" Type="System.String" Scope="User">
       <Value Profile="(Default)">3306</Value>
     </Setting>
+    <Setting Name="AutoClasses" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="Auto3DModel" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

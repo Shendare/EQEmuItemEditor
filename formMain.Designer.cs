@@ -394,10 +394,13 @@
 			this.textEditMaxCharges = new System.Windows.Forms.TextBox();
 			this.tabEditUnrecognized = new System.Windows.Forms.TabPage();
 			this.panelOptions = new System.Windows.Forms.Panel();
+			this.groupBox3 = new System.Windows.Forms.GroupBox();
+			this.checkAutoSetClasses = new System.Windows.Forms.CheckBox();
 			this.labelLoading = new System.Windows.Forms.Label();
 			this.timerLoading = new System.Windows.Forms.Timer(this.components);
 			this.dialogIconFolder = new System.Windows.Forms.FolderBrowserDialog();
 			this.buttonItemDelete = new System.Windows.Forms.Button();
+			this.checkAutoSet3DModel = new System.Windows.Forms.CheckBox();
 			this.groupBox1.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.iconPreview)).BeginInit();
 			this.itemPreview.SuspendLayout();
@@ -416,6 +419,7 @@
 			this.panelLDoNThemes.SuspendLayout();
 			this.tabEditEffects.SuspendLayout();
 			this.panelOptions.SuspendLayout();
+			this.groupBox3.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// listSearchItems
@@ -1195,7 +1199,6 @@
 			// 
 			this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.groupBox1.Controls.Add(this.buttonTestDatabase);
 			this.groupBox1.Controls.Add(this.labelDBHostNote);
 			this.groupBox1.Controls.Add(this.textDBConn);
 			this.groupBox1.Controls.Add(this.label79);
@@ -1211,18 +1214,18 @@
 			this.groupBox1.Controls.Add(this.label2);
 			this.groupBox1.Location = new System.Drawing.Point(13, 44);
 			this.groupBox1.Name = "groupBox1";
-			this.groupBox1.Size = new System.Drawing.Size(438, 213);
+			this.groupBox1.Size = new System.Drawing.Size(438, 173);
 			this.groupBox1.TabIndex = 11;
 			this.groupBox1.TabStop = false;
 			this.groupBox1.Text = "Database";
 			// 
 			// buttonTestDatabase
 			// 
-			this.buttonTestDatabase.Location = new System.Drawing.Point(129, 175);
+			this.buttonTestDatabase.Location = new System.Drawing.Point(142, 479);
 			this.buttonTestDatabase.Name = "buttonTestDatabase";
 			this.buttonTestDatabase.Size = new System.Drawing.Size(175, 23);
 			this.buttonTestDatabase.TabIndex = 16;
-			this.buttonTestDatabase.Text = "Test Connection";
+			this.buttonTestDatabase.Text = "Apply Settings";
 			this.buttonTestDatabase.UseVisualStyleBackColor = true;
 			this.buttonTestDatabase.Click += new System.EventHandler(this.buttonTestDatabase_Click);
 			// 
@@ -7297,6 +7300,8 @@
 			// 
 			this.panelOptions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
+			this.panelOptions.Controls.Add(this.buttonTestDatabase);
+			this.panelOptions.Controls.Add(this.groupBox3);
 			this.panelOptions.Controls.Add(this.label1);
 			this.panelOptions.Controls.Add(this.labelIconFolder);
 			this.panelOptions.Controls.Add(this.groupBox1);
@@ -7306,6 +7311,27 @@
 			this.panelOptions.Size = new System.Drawing.Size(460, 525);
 			this.panelOptions.TabIndex = 8;
 			this.panelOptions.Visible = false;
+			// 
+			// groupBox3
+			// 
+			this.groupBox3.Controls.Add(this.checkAutoSet3DModel);
+			this.groupBox3.Controls.Add(this.checkAutoSetClasses);
+			this.groupBox3.Location = new System.Drawing.Point(12, 226);
+			this.groupBox3.Name = "groupBox3";
+			this.groupBox3.Size = new System.Drawing.Size(439, 84);
+			this.groupBox3.TabIndex = 12;
+			this.groupBox3.TabStop = false;
+			this.groupBox3.Text = " Preferences ";
+			// 
+			// checkAutoSetClasses
+			// 
+			this.checkAutoSetClasses.AutoSize = true;
+			this.checkAutoSetClasses.Location = new System.Drawing.Point(20, 32);
+			this.checkAutoSetClasses.Name = "checkAutoSetClasses";
+			this.checkAutoSetClasses.Size = new System.Drawing.Size(316, 17);
+			this.checkAutoSetClasses.TabIndex = 13;
+			this.checkAutoSetClasses.Text = "Automatically set Class limitations after choosing an Item Type";
+			this.checkAutoSetClasses.UseVisualStyleBackColor = true;
 			// 
 			// labelLoading
 			// 
@@ -7340,6 +7366,16 @@
 			this.buttonItemDelete.Text = "Delete";
 			this.buttonItemDelete.UseVisualStyleBackColor = true;
 			this.buttonItemDelete.Click += new System.EventHandler(this.buttonItemDelete_Click);
+			// 
+			// checkAutoSet3DModel
+			// 
+			this.checkAutoSet3DModel.AutoSize = true;
+			this.checkAutoSet3DModel.Location = new System.Drawing.Point(20, 55);
+			this.checkAutoSet3DModel.Name = "checkAutoSet3DModel";
+			this.checkAutoSet3DModel.Size = new System.Drawing.Size(285, 17);
+			this.checkAutoSet3DModel.TabIndex = 13;
+			this.checkAutoSet3DModel.Text = "Automatically set 3D model after choosing an Item Icon";
+			this.checkAutoSet3DModel.UseVisualStyleBackColor = true;
 			// 
 			// formMain
 			// 
@@ -7396,6 +7432,8 @@
 			this.tabEditEffects.PerformLayout();
 			this.panelOptions.ResumeLayout(false);
 			this.panelOptions.PerformLayout();
+			this.groupBox3.ResumeLayout(false);
+			this.groupBox3.PerformLayout();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -7771,6 +7809,9 @@
 		private System.Windows.Forms.Panel panelLDoNThemes;
 		private System.Windows.Forms.CheckedListBox listEditLDoNTheme;
 		private System.Windows.Forms.Label label115;
+		private System.Windows.Forms.GroupBox groupBox3;
+		private System.Windows.Forms.CheckBox checkAutoSetClasses;
+		private System.Windows.Forms.CheckBox checkAutoSet3DModel;
 
     }
 }

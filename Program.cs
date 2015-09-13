@@ -45,6 +45,8 @@ namespace EQEmuItemEditor
     {
         public static string IconFolder = @"%UserProfile%\Pictures\EQIcons";
         public static string SearchName = "";
+		public static bool   AutoClasses = true;
+		public static bool   Auto3DModel = true;
         
         public class Database
         {
@@ -60,6 +62,8 @@ namespace EQEmuItemEditor
         {
             IconFolder = Properties.Settings.Default.IconFolder;
             SearchName = Properties.Settings.Default.SearchName;
+			AutoClasses = Properties.Settings.Default.AutoClasses;
+			Auto3DModel = Properties.Settings.Default.Auto3DModel;
 
             Database.Conn = Properties.Settings.Default.DBConn;
             Database.Host = Properties.Settings.Default.DBHost;
@@ -73,6 +77,8 @@ namespace EQEmuItemEditor
         {
             Properties.Settings.Default.IconFolder = IconFolder;
             Properties.Settings.Default.SearchName = SearchName;
+			Properties.Settings.Default.AutoClasses = AutoClasses;
+			Properties.Settings.Default.Auto3DModel = Auto3DModel;
 
             Properties.Settings.Default.DBConn = Database.Conn;
             Properties.Settings.Default.DBHost = Database.Host;
